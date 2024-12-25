@@ -1,9 +1,13 @@
+"use client";
+
 import Image from "next/image";
 import UnitCounter from "./UnitCounter";
 import GroupCounter from "./GroupCounter";
 import AreaCounter from "./AreaCounter";
 import Product from "../types/Product";
 import { CircleCheck, CircleX } from "lucide-react";
+import { useState } from "react";
+import { useCart } from "../contexts/CartContext";
 
 interface ProductProps {
   product: Product;
@@ -11,6 +15,8 @@ interface ProductProps {
 }
 
 const ProductDetail: React.FC<ProductProps> = ({ product, className }) => {
+  const [quantity, setQuantity] = useState(0);
+  const cart = useCart();
   let offDiscount: number = 0;
   const priceFormat = new Intl.NumberFormat("es-AR", {
     style: "currency",
@@ -21,6 +27,26 @@ const ProductDetail: React.FC<ProductProps> = ({ product, className }) => {
     offDiscount =
       100 - Number((product.price / product.listingPrice).toFixed(2)) * 100;
   }
+
+  const handleQuantityUpdate = (value: number) => {
+    setQuantity(value);
+    let existe = false;
+    for (let i = 0; i < cart.items.length; i++) {
+      if (cart.items[i].product == product) {
+        console.log("Existe en el cart");
+        cart.items[i].quantity = value;
+        existe = true;
+      }
+    }
+
+    if (!existe) {
+      console.log("No existe en el cart, agregando...");
+      cart.items = [...cart.items, { product: product, quantity: value }];
+    }
+    console.log(cart);
+    console.log("Nuevo valor (" + product.title + ") : " + value);
+  };
+
   return (
     <div className={`${className} flex border items-center w-1/2 py-5`}>
       <Image src="/pallet.webp" width={300} height={300} alt="Imagen"></Image>
@@ -68,6 +94,7 @@ const ProductDetail: React.FC<ProductProps> = ({ product, className }) => {
           <GroupCounter
             unitsPerGroup={product.unitValue}
             maxStock={product.stock}
+            onUpdate={handleQuantityUpdate}
             className="mt-3"
           />
         ) : product.salesUnit === "area" &&
@@ -76,6 +103,7 @@ const ProductDetail: React.FC<ProductProps> = ({ product, className }) => {
           <AreaCounter
             unit={product.measurementUnit}
             areaPerUnit={product.unitValue}
+            onUpdate={handleQuantityUpdate}
             maxStock={product.stock}
             className="mt-3"
           />
@@ -83,6 +111,7 @@ const ProductDetail: React.FC<ProductProps> = ({ product, className }) => {
           <UnitCounter
             value={0}
             maxUnits={product.stock}
+            onUpdate={handleQuantityUpdate}
             minUnits={0}
             steps={1}
             className="mt-3"

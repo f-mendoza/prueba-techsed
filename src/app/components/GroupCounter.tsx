@@ -1,13 +1,14 @@
 "use client";
 
 import { Plus, Minus } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import UnitCounter from "./UnitCounter";
 
 // Declaro una interfaz con los props y sus respectivos tipos
 interface GroupCounterProps {
   unitsPerGroup: number;
   maxStock: number;
+  onUpdate?: (newValue: number) => void;
   className?: string;
 }
 
@@ -15,10 +16,15 @@ interface GroupCounterProps {
 const GroupCounter: React.FC<GroupCounterProps> = ({
   unitsPerGroup,
   maxStock,
+  onUpdate,
   className,
 }) => {
   const [groups, setGroups] = useState(0);
   const units = useMemo(() => groups * unitsPerGroup, [groups]);
+
+  useEffect(() => {
+    if (onUpdate !== undefined) onUpdate(groups);
+  }, [groups]);
 
   return (
     <div className={`${className} flex gap-3`}>

@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import { Rubik } from "next/font/google";
+import Cart from "./types/Cart";
+import Header from "./components/Header";
+import { CartProvider } from "./contexts/CartContext";
 import "./globals.css";
 
 const rubikFont = Rubik({
@@ -18,10 +21,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${rubikFont.className} antialiased`}>
-        <header className="bg-blue-900 flex w-full h-20 border-bottom shadow-xl"></header>
-        {children}
-      </body>
+      <CartProvider>
+        <body className={`${rubikFont.className} antialiased`}>
+          <Header />
+          {children}
+        </body>
+      </CartProvider>
     </html>
   );
 }

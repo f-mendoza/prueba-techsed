@@ -9,6 +9,7 @@ interface GroupCounterProps {
   unit: string;
   areaPerUnit: number;
   maxStock: number;
+  onUpdate?: (newValue: number) => void;
   className?: string;
 }
 
@@ -17,11 +18,16 @@ const GroupCounter: React.FC<GroupCounterProps> = ({
   unit,
   areaPerUnit,
   maxStock,
+  onUpdate,
   className,
 }) => {
   const [groups, setGroups] = useState(0);
   const [area, setArea] = useState(0);
   // const area = useMemo(() => groups * areaPerUnit, [groups]);
+
+  useEffect(() => {
+    if (onUpdate !== undefined) onUpdate(groups);
+  }, [groups]);
 
   const handleAreaChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setArea(Number(event.target.value));

@@ -39,7 +39,7 @@ export default function Home() {
   return (
     <div className="flex flex-col items-center gap-5 mt-12">
       {products.map((product) => (
-        <ProductDetail product={product}></ProductDetail>
+        <ProductDetail product={product} key={product.id}></ProductDetail>
       ))}
     </div>
   );
