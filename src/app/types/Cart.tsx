@@ -8,6 +8,7 @@ type Cart = {
   }[];
   createdAt: Date;
   updateItem: (product: Product, quantity: number) => void;
+  isInCart: (product: Product) => boolean;
 };
 
 export default Cart;

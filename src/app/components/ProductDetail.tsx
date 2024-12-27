@@ -5,7 +5,7 @@ import UnitCounter from "./UnitCounter";
 import GroupCounter from "./GroupCounter";
 import AreaCounter from "./AreaCounter";
 import Product from "../types/Product";
-import { CircleCheck, CircleX } from "lucide-react";
+import { CircleCheck, CircleX, ShoppingCart, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useCart } from "../contexts/CartContext";
 
@@ -17,44 +17,112 @@ interface ProductProps {
 const ProductDetail: React.FC<ProductProps> = ({ product, className }) => {
   const [quantity, setQuantity] = useState(0);
   const cart = useCart();
-  let offDiscount: number = 0;
   const priceFormat = new Intl.NumberFormat("es-AR", {
     style: "currency",
     currency: "ARS",
   });
+
+  // Si existe un listing price distinto al price del producto calculo el porcentaje de descuento de una oferta para mostrar el chip
+  let offDiscount: number = 0;
   if (product.listingPrice) {
-    // Calculo el porcentaje de descuento de una oferta para mostrar el chip
     offDiscount =
       100 - Number((product.price / product.listingPrice).toFixed(2)) * 100;
   }
 
-  const handleQuantityUpdate = (value: number) => {
-    setQuantity(value);
-    let existe = false;
-    for (let i = 0; i < cart.items.length; i++) {
-      if (cart.items[i].product == product) {
-        console.log("Existe en el cart");
-        cart.items[i].quantity = value;
-        existe = true;
+  const renderCounter = () => {
+    if (product.stock > 0) {
+      // Si no existe el unitValue y se vende por unidad, renderizo el UnitCounter
+      if (product.unitValue === undefined && product.salesUnit === "unit") {
+        return (
+          <UnitCounter
+            value={quantity}
+            maxUnits={product.stock}
+            onUpdate={handleQuantityUpdate}
+            minUnits={0}
+            steps={1}
+            className="mt-3 lg:pl-4"
+          />
+        );
+      } else if (
+        // Si el salesUnit es group y el unitValue esta definido renderido el GroupCounter
+        product.salesUnit === "group" &&
+        product.unitValue !== undefined
+      ) {
+        return (
+          <GroupCounter
+            unitsPerGroup={product.unitValue}
+            maxStock={product.stock}
+            onUpdate={handleQuantityUpdate}
+            type={product.measurementUnit}
+            value={quantity}
+            className="mt-3 lg:pl-4"
+          />
+        );
+      } else if (
+        // Si el salesUnit es area y tanto el unitValue como el measurementUnit estan definidos entonces renderizo el AreaCounter
+        product.salesUnit === "area" &&
+        product.unitValue !== undefined &&
+        product.measurementUnit !== undefined
+      ) {
+        return (
+          <AreaCounter
+            unit={product.measurementUnit}
+            areaPerUnit={product.unitValue}
+            onUpdate={handleQuantityUpdate}
+            value={quantity}
+            maxStock={product.stock}
+            className="mt-3 lg:pl-4"
+          />
+        );
+      } else {
+        // Si no cumple ninguno de los 3 casos no renderizo ningun Counter
+        return <></>;
       }
+    } else {
+      // En caso de que no haya stock no renderizo ningun Counter
+      return <></>;
     }
+  };
 
-    if (!existe) {
-      console.log("No existe en el cart, agregando...");
-      cart.items = [...cart.items, { product: product, quantity: value }];
+  const handleQuantityUpdate = (value: number) => {
+    if (value <= product.stock) {
+      setQuantity(value);
+      cart.updateItem(product, value);
     }
-    console.log(cart);
-    console.log("Nuevo valor (" + product.title + ") : " + value);
   };
 
   return (
-    <div className={`${className} flex border items-center w-1/2 py-5`}>
-      <Image src="/pallet.webp" width={300} height={300} alt="Imagen"></Image>
-      <div className="flex flex-col ml-8">
-        <p className="text-gray-400 text-xs">SKU: {product.id}</p>
-        <h2 className="text-xl font-semibold">{product.title}</h2>
-        <div className="flex items-center gap-1 text-sm mt-1">
-          <p className="flex gap-3">
+    <div
+      className={`${className} flex flex-col lg:flex-row border items-center w-3/4 md:w-1/2 py-5`}
+      data-id={product.id}
+    >
+      {product.imagePath ? (
+        // Si el producto tiene imagen lo cargo sino uso una por defecto
+        <Image
+          src={product.imagePath}
+          width={1920}
+          height={1080}
+          className="w-full lg:w-80 h-auto max-w-60 object-contain pl-4"
+          alt="Imagen"
+        ></Image>
+      ) : (
+        <Image
+          src="/no_image.jpg"
+          width={1920}
+          height={1080}
+          className="w-full lg:w-80 h-auto max-w-60 object-contain pl-4"
+          alt="Imagen"
+        ></Image>
+      )}
+
+      <div className="flex flex-col items-center lg:items-start lg:pl-4 w-full">
+        <p className="text-gray-400 text-xs self-start ml-4">
+          SKU: {product.id}
+        </p>
+        <h2 className="text-xl font-semibold px-4">{product.title}</h2>
+        <div className="flex items-center gap-1 text-sm mt-1 self-start ml-4">
+          {/* Muestro si tengo stock o no del producto */}
+          <p className="flex gap-3" data-item="stock">
             {product.stock > 0 ? (
               <>
                 <CircleCheck className="text-green-400" size={15} /> Stock
@@ -68,14 +136,14 @@ const ProductDetail: React.FC<ProductProps> = ({ product, className }) => {
             )}
           </p>
         </div>
-        <div className="flex items-center mt-4 gap-1">
+        <div className="flex items-center mt-4 gap-1 self-start ml-4">
           <div className="flex flex-col">
             <span className="text-xl font-bold">
               {priceFormat.format(product.price)}
             </span>
-            {product.unitValue !== undefined && (
+            {product.unitPrice !== undefined && (
               <span className="text-xs font-bold text-gray-600">
-                PU: ${product.unitValue}
+                PU: ${product.unitPrice}
               </span>
             )}
             {product.listingPrice !== undefined && (
@@ -84,47 +152,47 @@ const ProductDetail: React.FC<ProductProps> = ({ product, className }) => {
               </span>
             )}
           </div>
+
           {offDiscount > 0 && (
+            // Muestro el descuento en un chip en caso de haberlo
             <span className="text-xs font-bold text-white bg-blue-500 px-2 py-0.5 rounded-lg">
               {offDiscount}% OFF
             </span>
           )}
         </div>
-        {product.salesUnit === "group" && product.unitValue !== undefined ? (
-          <GroupCounter
-            unitsPerGroup={product.unitValue}
-            maxStock={product.stock}
-            onUpdate={handleQuantityUpdate}
-            className="mt-3"
-          />
-        ) : product.salesUnit === "area" &&
-          product.unitValue !== undefined &&
-          product.measurementUnit !== undefined ? (
-          <AreaCounter
-            unit={product.measurementUnit}
-            areaPerUnit={product.unitValue}
-            onUpdate={handleQuantityUpdate}
-            maxStock={product.stock}
-            className="mt-3"
-          />
-        ) : (
-          <UnitCounter
-            value={0}
-            maxUnits={product.stock}
-            onUpdate={handleQuantityUpdate}
-            minUnits={0}
-            steps={1}
-            className="mt-3"
-          />
-        )}
 
-        <p className="text-gray-400 my-2">{product.description}</p>
-        <button className="text-center bg-blue-900 text-white font-bold rounded-xl py-2 mb-3 w-80">
-          Comprar ahora
-        </button>
-        <button className="text-center border border-blue-900 text-blue-900 font-bold rounded-xl py-2 mb-3 w-80">
-          Eliminar del carrito
-        </button>
+        {renderCounter()}
+
+        <p className="text-gray-400 my-2 px-4">{product.description}</p>
+        {product.stock > 0 ? (
+          <>
+            <button className="text-center bg-blue-900 text-white font-bold rounded-xl mb-3 py-2 w-5/6 lg:w-80 lg:self-start lg:ml-4 self-center">
+              Comprar ahora
+            </button>
+            {cart.isInCart(product) ? (
+              <button
+                className="text-center border border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-colors font-semibold rounded-xl py-2 mb-3 w-5/6 lg:w-80 lg:self-start lg:ml-4 self-center flex justify-center gap-2"
+                onClick={() => handleQuantityUpdate(0)}
+              >
+                Eliminar del carrito <Trash2 />
+              </button>
+            ) : (
+              <button
+                className="text-center border border-blue-900 hover:bg-blue-900 hover:text-white transition-colors text-blue-900 font-semibold rounded-xl py-2 mb-3 w-5/6 lg:w-80 lg:self-start lg:ml-4 self-center flex justify-center gap-2"
+                onClick={() => handleQuantityUpdate(1)}
+              >
+                Agregar al carrito <ShoppingCart />
+              </button>
+            )}
+          </>
+        ) : (
+          <button
+            className="text-center border border-gray-500 text-gray-500 font-normal rounded-xl py-2 mb-3 w-5/6 lg:w-80 lg:self-start lg:ml-4 self-center flex justify-center gap-2"
+            disabled
+          >
+            Sin Stock
+          </button>
+        )}
       </div>
     </div>
   );

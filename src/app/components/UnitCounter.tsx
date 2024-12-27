@@ -43,6 +43,7 @@ const UnitCounter: React.FC<UnitCounterProps> = ({
           onClick={() => {
             if (units > minUnits) handleUpdate(units - steps);
           }}
+          data-action="subtract-unit"
         >
           <Minus size={10} />
         </button>
@@ -51,12 +52,14 @@ const UnitCounter: React.FC<UnitCounterProps> = ({
           className="border border-gray-100 rounded-md w-16 text-center"
           disabled
           value={units}
+          data-item="unit-counter-input"
         />
         <button
           className="border rounded p-1.5 hover:bg-gray-100"
           onClick={() => {
             if (units < maxUnits) handleUpdate(units + steps);
           }}
+          data-action="add-unit"
         >
           <Plus size={10} />
         </button>
