@@ -8,6 +8,7 @@ import Product from "../types/Product";
 import { CircleCheck, CircleX, ShoppingCart, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useCart } from "../contexts/CartContext";
+import CounterProps from "../interfaces/CounterProps";
 
 interface ProductProps {
   product: Product;
@@ -29,65 +30,33 @@ const ProductDetail: React.FC<ProductProps> = ({ product, className }) => {
       100 - Number((product.price / product.listingPrice).toFixed(2)) * 100;
   }
 
-  const renderCounter = () => {
-    if (product.stock > 0) {
-      // Si no existe el unitValue y se vende por unidad, renderizo el UnitCounter
-      if (product.unitValue === undefined && product.salesUnit === "unit") {
-        return (
-          <UnitCounter
-            value={quantity}
-            maxUnits={product.stock}
-            onUpdate={handleQuantityUpdate}
-            minUnits={0}
-            steps={1}
-            className="mt-3 lg:pl-4"
-          />
-        );
-      } else if (
-        // Si el salesUnit es group y el unitValue esta definido renderido el GroupCounter
-        product.salesUnit === "group" &&
-        product.unitValue !== undefined
-      ) {
-        return (
-          <GroupCounter
-            unitsPerGroup={product.unitValue}
-            maxStock={product.stock}
-            onUpdate={handleQuantityUpdate}
-            type={product.measurementUnit}
-            value={quantity}
-            className="mt-3 lg:pl-4"
-          />
-        );
-      } else if (
-        // Si el salesUnit es area y tanto el unitValue como el measurementUnit estan definidos entonces renderizo el AreaCounter
-        product.salesUnit === "area" &&
-        product.unitValue !== undefined &&
-        product.measurementUnit !== undefined
-      ) {
-        return (
-          <AreaCounter
-            unit={product.measurementUnit}
-            areaPerUnit={product.unitValue}
-            onUpdate={handleQuantityUpdate}
-            value={quantity}
-            maxStock={product.stock}
-            className="mt-3 lg:pl-4"
-          />
-        );
-      } else {
-        // Si no cumple ninguno de los 3 casos no renderizo ningun Counter
-        return <></>;
-      }
-    } else {
-      // En caso de que no haya stock no renderizo ningun Counter
-      return <></>;
-    }
-  };
-
   const handleQuantityUpdate = (value: number) => {
     if (value <= product.stock) {
       setQuantity(value);
       cart.updateItem(product, value);
+    }
+  };
+
+  let counterProps: CounterProps = {
+    value: quantity,
+    stock: product.stock,
+    measurementUnit: product.measurementUnit,
+    unitValue: product.unitValue,
+    className: "mt-3 lg:pl-4",
+    onUpdate: handleQuantityUpdate,
+  };
+
+  let counters = {
+    group: <GroupCounter {...counterProps} />,
+    unit: <UnitCounter {...counterProps} />,
+    area: <AreaCounter {...counterProps} />,
+  };
+
+  const renderCounter = () => {
+    if (product.stock > 0) {
+      return counters[product.salesUnit] ?? <></>;
+    } else {
+      return <></>;
     }
   };
 

@@ -2,23 +2,12 @@
 
 import { Plus, Minus } from "lucide-react";
 import { useState, useEffect } from "react";
+import CounterProps from "../interfaces/CounterProps";
 
-interface UnitCounterProps {
-  label?: string;
-  value: number;
-  maxUnits: number;
-  minUnits: number;
-  steps: number;
-  className?: string;
-  onUpdate?: (unitValue: number) => void;
-}
-
-const UnitCounter: React.FC<UnitCounterProps> = ({
+const UnitCounter: React.FC<CounterProps> = ({
   label,
   value,
-  maxUnits,
-  minUnits,
-  steps,
+  stock,
   className,
   onUpdate,
 }) => {
@@ -29,7 +18,7 @@ const UnitCounter: React.FC<UnitCounterProps> = ({
     if (onUpdate !== undefined) onUpdate(newValue);
   };
 
-  useEffect(() => setUnits(Math.min(value, maxUnits)), [value]);
+  useEffect(() => setUnits(Math.min(value, stock)), [value]);
 
   return (
     <div className={`${className} flex flex-col`}>
@@ -41,7 +30,7 @@ const UnitCounter: React.FC<UnitCounterProps> = ({
         <button
           className="border rounded p-1.5 hover:bg-gray-100"
           onClick={() => {
-            if (units > minUnits) handleUpdate(units - steps);
+            if (units > 0) handleUpdate(units - 1);
           }}
           data-action="subtract-unit"
         >
@@ -57,7 +46,7 @@ const UnitCounter: React.FC<UnitCounterProps> = ({
         <button
           className="border rounded p-1.5 hover:bg-gray-100"
           onClick={() => {
-            if (units < maxUnits) handleUpdate(units + steps);
+            if (units < stock) handleUpdate(units + 1);
           }}
           data-action="add-unit"
         >

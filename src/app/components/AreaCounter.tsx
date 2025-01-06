@@ -3,22 +3,13 @@
 import { Plus, Minus } from "lucide-react";
 import { useState, useMemo, useEffect, useRef } from "react";
 import UnitCounter from "./UnitCounter";
-
-// Declaro una interfaz con los props y sus respectivos tipos
-interface GroupCounterProps {
-  unit: string;
-  areaPerUnit: number;
-  maxStock: number;
-  value: number;
-  onUpdate?: (newValue: number) => void;
-  className?: string;
-}
+import CounterProps from "../interfaces/CounterProps";
 
 // Luego declaro GroupCounter de tipo componente funcional que recibe como argumento la interfaz creada anteriormente
-const GroupCounter: React.FC<GroupCounterProps> = ({
-  unit,
-  areaPerUnit,
-  maxStock,
+const GroupCounter: React.FC<CounterProps> = ({
+  measurementUnit,
+  unitValue,
+  stock,
   value,
   onUpdate,
   className,
@@ -32,13 +23,13 @@ const GroupCounter: React.FC<GroupCounterProps> = ({
   }, [groups]);
 
   useEffect(() => {
-    if (value <= maxStock) setGroups(value);
+    if (value <= stock) setGroups(value);
   }, [value]);
 
   const timeout = useRef<NodeJS.Timeout | null>(null);
 
   const handleAreaChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (maxStock > 0) {
+    if (stock > 0) {
       setArea(Number(event.target.value));
 
       // Si ya existe un timeout lo elimino
@@ -50,26 +41,28 @@ const GroupCounter: React.FC<GroupCounterProps> = ({
         setGroups(
           // Elijo entre el stock maximo del producto o la cantidad necesaria para cubrir la superficie/distancia deseada
           Math.min(
-            maxStock,
+            stock,
             // Divido la cantidad de superficie/distancia por el area/distancia cubierta por cada caja
-            Math.ceil(Number(event.target.value) / areaPerUnit)
+            Math.ceil(Number(event.target.value) / (unitValue ?? 1))
           )
         );
-        setArea(Number((groups * areaPerUnit).toFixed(2)));
+        setArea(Number((groups * (unitValue ?? 1)).toFixed(2)));
       }, 2000);
     }
   };
 
   useEffect(() => {
     // Si cambia la cantidad de grupos, actualizo el area cubierta redondeado a 2 decimales
-    setArea(Number((groups * areaPerUnit).toFixed(2)));
+    setArea(Number((groups * (unitValue ?? 1)).toFixed(2)));
   }, [groups]);
 
   return (
     <div className={`${className} flex gap-3`}>
       <div className="flex flex-col items-center">
         <label className="text-sm font-bold">
-          {unit === "m2" ? "Superficie (en m2)" : "Distancia cubierta (en m)"}
+          {measurementUnit === "m2"
+            ? "Superficie (en m2)"
+            : "Distancia cubierta (en m)"}
         </label>
         <div className="flex">
           <input
@@ -79,16 +72,14 @@ const GroupCounter: React.FC<GroupCounterProps> = ({
             value={area}
             data-item="area-input"
           />
-          <span className="ml-2 text-gray-400">{unit}</span>
+          <span className="ml-2 text-gray-400">{measurementUnit}</span>
         </div>
       </div>
       <div className="flex flex-col items-center">
         <UnitCounter
           label="Cantidad de cajas"
           value={groups}
-          maxUnits={maxStock}
-          minUnits={0}
-          steps={1}
+          stock={stock}
           onUpdate={setGroups}
         ></UnitCounter>
       </div>

@@ -41,6 +41,13 @@ test("Group counter", async ({ page }) => {
   await expect(groupCounter).toHaveValue("5");
   await expect(unitsCounter).toHaveValue("990");
 
+  // Compruebo que al cargar 400 ladrillos, me actualice el valor de los pallets a 3 y
+  // las unidades se actualicen a 594 (que son las unidades que traen 3 pallets)
+  unitsCounter.fill("400");
+  await page.waitForTimeout(2100);
+  await expect(groupCounter).toHaveValue("3");
+  await expect(unitsCounter).toHaveValue("594");
+
   // Al eliminar del carrito espero que tenga 0 grupos y 0 unidades
   await removeFromCartButton.click();
   await expect(groupCounter).toHaveValue("0");
@@ -87,6 +94,13 @@ test("Area counter", async ({ page }) => {
   // Compruebo que sean 5 cajas de ceramicos y 990 unidades
   await expect(groupCounter).toHaveValue("5");
   await expect(areaCounter).toHaveValue("13.4");
+
+  // Compruebo que al cargar 6 m2 de superficie, me actualice el valor de las cajas a 3 y
+  // la superficie se actualice a 8.04 m2 (que es la superficie que cubren 3 cajas)
+  areaCounter.fill("6");
+  await page.waitForTimeout(2100);
+  await expect(groupCounter).toHaveValue("3");
+  await expect(areaCounter).toHaveValue("8.04");
 
   // Al eliminar del carrito espero que tenga 0 cajas de ceramicos y 0 unidades
   await removeFromCartButton.click();
